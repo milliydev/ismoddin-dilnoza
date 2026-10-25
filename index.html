@@ -376,11 +376,18 @@ button{font:inherit;cursor:pointer}
   var song=document.getElementById("song"),mBtn=document.getElementById("musicBtn");
   function setM(p){mBtn.classList.toggle("playing",p);mBtn.setAttribute("aria-label",p?"Musiqani o'chirish":"Musiqani yoqish");}
   function playSong(){
-    mBtn.classList.add("on");song.volume=0;
+    mBtn.classList.add("on");
+    if(!song.paused){setM(true);return;}
+    song.volume=.8;
     var pr=song.play();
-    if(pr&&pr.then){pr.then(function(){setM(true);var v=0;var f=setInterval(function(){v+=.05;if(v>=.8){v=.8;clearInterval(f);}song.volume=v;},120);}).catch(function(){setM(false);});}
+    if(pr&&pr.then){pr.then(function(){setM(true);}).catch(function(){setM(false);});}else{setM(!song.paused);}
   }
-  mBtn.addEventListener("click",function(){if(song.paused){song.volume=.8;song.play().then(function(){setM(true)}).catch(function(){toast("Musiqani yoqib bo'lmadi")});}else{song.pause();setM(false);}});
+  // Sahifa ochilishi bilan yoqishga urinish, brauzer bloklasa birinchi teginishda yoqiladi
+  function tryAuto(){var pr=song.play();if(pr&&pr.then)pr.then(function(){setM(true);}).catch(function(){});}
+  function unlock(){if(song.paused&&!song.dataset.stopped)playSong();["pointerdown","touchstart","keydown","click"].forEach(function(t){document.removeEventListener(t,unlock,true);});}
+  ["pointerdown","touchstart","keydown","click"].forEach(function(t){document.addEventListener(t,unlock,true);});
+  song.volume=.8;tryAuto();
+  mBtn.addEventListener("click",function(){if(song.paused){song.dataset.stopped="";song.volume=.8;song.play().then(function(){setM(true)}).catch(function(){toast("Musiqani yoqib bo'lmadi")});}else{song.pause();song.dataset.stopped="1";setM(false);}});
   document.addEventListener("visibilitychange",function(){if(document.hidden&&!song.paused){song.pause();song.dataset.resume="1";}else if(!document.hidden&&song.dataset.resume){song.dataset.resume="";song.play().then(function(){setM(true)}).catch(function(){setM(false)});}});
 
   // Scroll reveal
